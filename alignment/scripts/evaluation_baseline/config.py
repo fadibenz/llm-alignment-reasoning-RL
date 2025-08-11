@@ -5,7 +5,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Script to evaluate model on a dataset")
     parser.add_argument("--model_name", type=str, default="Qwen/Qwen2.5-0.5B",
                         help="Name of HF model to evaluate")
-    parser.add_argument("--dataset", type=str, required=True,
+    parser.add_argument("--dataset", type=str, default="data/MATH/validation.jsonl",
                         help="Path to dataset.jsonl to evaluate on")
     parser.add_argument("--output_path", type=str, required=True,
                         help="Path to save serialized evaluation results")
