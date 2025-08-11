@@ -1,39 +1,45 @@
-from vllm import LLM, SamplingParams
-from typing import Callable, Dict, List
 import json
+import logging
 from pathlib import Path
+from typing import Callable, Dict, List, Union
+from vllm import LLM, SamplingParams
+
 
 def evaluate_vllm(
-        vllm_model: LLM,
-        reward_fn:  Callable[[str, int], Dict[str, float]],
-        prompts: List[str],
-        eval_sampling_params: SamplingParams,
-        file_path: str | Path
-    ) -> None:
+    vllm_model: LLM,
+    reward_fn: Callable[[str, int], Dict[str, float]],
+    prompts: List[str],
+    sampling_params: SamplingParams,
+    results_path: Union[str, Path],
+    summary_path: Union[str, Path]
+) -> None:
 
-    outputs = vllm_model.generate(prompts, eval_sampling_params)
-    to_serialize_output = []
-    number_correct_answers = 0
-    number_correctly_formatted = 0
+    total_correct_answers = 0
+    total_correct_formatting = 0
 
-    for idx, output in enumerate(outputs):
-        prompt = output.prompt
-        generated_text = output.outputs[0].text
-        evaluation_scores = reward_fn(generated_text, idx)
-        number_correct_answers += evaluation_scores["answer_reward"]
-        number_correctly_formatted += evaluation_scores["format_reward"]
-        to_serialize_output.append({
-            "prompt": prompt,
-            "output": generated_text,
-            "evaluation_scores": evaluation_scores
-        })
+    with open(results_path, "w", encoding="utf-8") as results_file:
+        outputs = vllm_model.generate(prompts, sampling_params)
 
-    with open(file_path, "w", encoding="utf-8") as f:
+        for idx, output in enumerate(outputs):
+            generated_text = output.outputs[0].text if output.outputs else ""
+            evaluation_scores = reward_fn(generated_text, idx)
 
-        for record in to_serialize_output:
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            total_correct_answers += evaluation_scores.get("answer_reward", 0)
+            total_correct_formatting += evaluation_scores.get("format_reward", 0)
 
-        f.write(json.dumps({
-            "number_correct_answers": number_correct_answers,
-            "number_correctly_formatted": number_correctly_formatted
-        }))
+            json.dump({
+                "prompt": output.prompt,
+                "output": generated_text,
+                "evaluation_scores": evaluation_scores
+            }, results_file, ensure_ascii=False)
+            results_file.write("\n")
+
+    summary = {
+        "total_correct_answers": total_correct_answers,
+        "total_correct_formatting": total_correct_formatting,
+        "total_number": len(prompts)
+    }
+    with open(summary_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+
+    logging.info(f"Evaluation complete. Results in {results_path}, summary in {summary_path}")
