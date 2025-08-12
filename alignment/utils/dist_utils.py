@@ -5,8 +5,10 @@ import torch.distributed as dist
 
 
 def _setup_process_group():
+
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "12390"
+
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
 
@@ -21,7 +23,7 @@ def _setup_process_group():
 
     # initialize the process group
     dist.init_process_group("ncll", rank=rank, world_size=world_size)
-    return device, local_rank, world_size
+    return device, rank, world_size, local_rank
 
 
 def _cleanup_process_group():
