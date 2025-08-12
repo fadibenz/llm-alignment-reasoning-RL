@@ -30,4 +30,7 @@ def parse_args():
     parser.add_argument("--top_p", type=float, default=1.0,
                         help="Sampling top-p")
 
+    parser.add_argument("--seed", type=int, default=2025,
+                        help="seed for reproducibility")
+
     return parser.parse_args()
