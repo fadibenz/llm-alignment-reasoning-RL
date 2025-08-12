@@ -4,16 +4,24 @@ import random
 from torch.utils.data import Dataset
 
 class TokenizedDataset(Dataset):
-    def __init__(self, data_tensor, labels_tensor):
+    def __init__(self, data_tensor, labels_tensor, response_masks):
         assert len(data_tensor) == len(labels_tensor), "Data and labels must match in length"
+        assert len(data_tensor) == len(response_masks), "Data and masks must match in length"
+
         self.data = data_tensor
         self.labels = labels_tensor
+        self.response_masks = response_masks
+
+
+    def __getitem__(self, idx):
+        return (
+            self.data[idx],
+            self.labels[idx],
+            self.response_masks[idx]
+        )
 
     def __len__(self):
         return len(self.data)
-
-    def __getitem__(self, idx):
-        return self.data[idx], self.labels[idx]
 
 
 def load_validation_data(input_path: Path, prompt_template: str):
