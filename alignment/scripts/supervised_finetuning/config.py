@@ -3,6 +3,10 @@ from dataclasses import dataclass, field
 from omegaconf import MISSING, OmegaConf
 from hydra.core.config_store import ConfigStore
 
+
+# I set hyperparameters based on s1: Simple test-time scaling recipe: https://arxiv.org/pdf/2501.19393
+
+
 @dataclass
 class PathsConfig:
     train_path: Path = MISSING
@@ -16,29 +20,32 @@ class ModelConfig:
 
 @dataclass
 class TrainingConfig:
-
-    number_train_samples: int = 256
     num_epochs: int = 5
-    train_batch_size: int = 128
+    number_train_samples: int = 1767
 
-    seed: int = 2025
-    dtype: str = "float16"
     eval_batch_size: int = "${training.train_batch_size}"
-    eval_interval: int = 20
+    train_batch_size: int = 16
     gradient_accumulation_steps: int = 2
+
+    dtype: str = "float16"
+
+    eval_interval: int = 20
+    log_interval: int = 10
+
     max_grad_norm: float | None = 1.0
-    num_workers: int = 4
-    lr: float = 1e-3
-    flash_attention: str = "flash_attention_2"
-    warmup_ratio: float = 0.01
-    weight_decay: float = 0.1
+    lr: float = 1e-5
+    warmup_ratio: float = 0.05
+    weight_decay: float = 1e-4
     adam_beta1: float = 0.9
-    adam_beta2: float = 0.98
-    adam_eps: float = 1e-9
+    adam_beta2: float = 0.95
+
     wandb_project: str | None = None
     wandb_entity: str | None = None
-    log_interval: int = 20
     save_checkpoints: bool = False
+
+    num_workers: int = 4
+    flash_attention: str = "flash_attention_2"
+    seed: int = 2025
 
 @dataclass
 class InferenceConfig:
