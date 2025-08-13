@@ -31,9 +31,10 @@ from alignment.utils.utils import setup_logging, set_seed_everything
 from alignment.utils.data import load_validation_data, load_training_data, TokenizedDataset
 
 logger = logging.getLogger(__name__)
+register_configs()
 
 install(show_locals=True)
-register_configs()
+
 @hydra.main(version_base=None, config_path=str(Path("configs").absolute().resolve()), config_name="config")
 def main(cfg: Config) -> None:
     setup_logging()
@@ -300,5 +301,4 @@ def main(cfg: Config) -> None:
     _cleanup_process_group()
 
 if __name__ == "__main__":
-    register_configs()
     main()
