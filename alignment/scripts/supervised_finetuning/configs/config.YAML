@@ -1,0 +1,6 @@
+defaults:
+  - paths: base_paths
+  - model: base_model
+  - training: base_training
+  - inference: base_inference
+  - _self_

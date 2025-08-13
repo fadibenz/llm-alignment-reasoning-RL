@@ -1,0 +1,9 @@
+paths:
+  train_path: data/MATH/sft.jsonl
+  valid_path: data/MATH/validation.jsonl
+  prompt_path: alignment/prompts
+  model_output: results/sft/qwen2_5_0_5B_MATH_sft
+
+training:
+  wandb_entity: benzaimafadi-esi
+  wandb_project: llm-sft-MATH
