@@ -6,7 +6,7 @@ requires-python = ">=3.11,<3.13"
 
 dependencies = [
     "accelerate>=1.5.2",
-     "alpaca-eval",
+    "alpaca-eval",
     "flash-attn==2.8.2",
     "jupyter>=1.1.1",
     "math-verify[antlr4-13-2]>=0.7.0",
@@ -22,7 +22,7 @@ dependencies = [
     "xopen>=2.0.2",
     "omegaconf>=2.3.0",
     "rich>=14.1.0",
-     "hydra-core>=1.3.2",
+    "hydra-core>=1.3.2",
 ]
 
 [tool.setuptools.packages.find]
