@@ -30,8 +30,6 @@ from alignment.utils.optimizer import get_cosine_lr
 from alignment.utils.utils import setup_logging, set_seed_everything
 from alignment.utils.data import load_validation_data, load_training_data, TokenizedDataset
 
-register_configs()
-
 logger = logging.getLogger(__name__)
 
 install(show_locals=True)
@@ -304,4 +302,5 @@ def main(cfg: Config) -> None:
     _cleanup_process_group()
 
 if __name__ == "__main__":
+    register_configs()
     main()
