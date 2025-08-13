@@ -5,7 +5,7 @@ from transformers import PreTrainedModel
 
 def init_vllm(model_id: str,
               device: str,
-              torch_dtype: torch.device,
+              torch_dtype: torch.dtype,
               gpu_memory_utilization: float = 0.85,
               ) -> LLM:
     # Monkeypatch from TRL: # https://github.com/huggingface/trl/blob/22759c820867c8659d00082ba8cf004e963873c1/trl/trainer/grpo_trainer.py
