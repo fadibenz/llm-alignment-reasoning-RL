@@ -128,7 +128,7 @@ def main(cfg: Config) -> None:
         model = AutoModelForCausalLM.from_pretrained(
             pretrained_model_name_or_path=cfg.model.model_name,
             torch_dtype=torch_dtype,
-            attn_implementation=cfg.training.flash_attention,
+            attn_implementation="flash_attention_2",
         )
 
         if is_master_process:
