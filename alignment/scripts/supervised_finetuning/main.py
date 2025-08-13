@@ -33,14 +33,12 @@ from alignment.utils.data import load_validation_data, load_training_data, Token
 logger = logging.getLogger(__name__)
 
 install(show_locals=True)
-
+register_configs()
 @hydra.main(version_base=None, config_path=str(Path("configs").absolute().resolve()), config_name="config")
 def main(cfg: Config) -> None:
     setup_logging()
-    cfg_dict = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
-
     default_cfg = OmegaConf.structured(Config())
-    cfg = OmegaConf.merge(default_cfg, cfg_dict)
+    cfg = OmegaConf.merge(default_cfg, cfg)
     pprint(cfg)
 
     # Setting up distributed training
