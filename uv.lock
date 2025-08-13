@@ -43,6 +43,7 @@ version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
+    { name = "hydra-core" },
     { name = "jupyter" },
     { name = "math-verify", extra = ["antlr4-13-2"] },
     { name = "notebook" },
@@ -61,6 +62,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "accelerate", specifier = ">=1.5.2" },
+    { name = "hydra-core", specifier = ">=0.11.2" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "math-verify", extras = ["antlr4-13-2"], specifier = ">=0.7.0" },
     { name = "notebook", specifier = ">=7.4.2" },
@@ -506,6 +508,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/45/c9/bdbe19339f76d12985bc03572f330a01a93c04dffecaaea3061bdd7fb892/huggingface_hub-0.34.4.tar.gz", hash = "sha256:a4228daa6fb001be3f4f4bdaf9a0db00e1739235702848df00885c9b5742c85c", size = 459768, upload-time = "2025-08-08T09:14:52.365Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/39/7b/bb06b061991107cd8783f300adff3e7b7f284e330fd82f507f2a1417b11d/huggingface_hub-0.34.4-py3-none-any.whl", hash = "sha256:9b365d781739c93ff90c359844221beef048403f1bc1f1c123c191257c3c890a", size = 561452, upload-time = "2025-08-08T09:14:50.159Z" },
+]
+
+[[package]]
+name = "hydra-core"
+version = "0.11.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "omegaconf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f4/53/2db5427a9b92ebbd3b084c3ad30f0954a694292eb44345be6aefd82b4cc1/hydra-core-0.11.2.tar.gz", hash = "sha256:7cfc2ccae318407aad830b552647c0ce2845ab6a4edbf997b63bfcaf73c14ee6", size = 42947, upload-time = "2019-12-04T22:49:50.644Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/05/0f/30ba374895b5e91e876dc6c70ff90cef67279fd1f4c3c6c40316cd004e3d/hydra_core-0.11.2-py3-none-any.whl", hash = "sha256:5af18737f929136f3c2228fb0d854c18a2b3f556de8cd4f710dae1acb1746e01", size = 71971, upload-time = "2019-12-04T22:49:48.878Z" },
 ]
 
 [[package]]
