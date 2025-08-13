@@ -5,3 +5,6 @@ paths:
   valid_path: data/MATH/validation.jsonl
   prompt_path: alignment/prompts/r1_zero.prompt
   model_output: results/sft/qwen2_5_0_5B_MATH_sft
+
+training:
+  flash_attention: null
