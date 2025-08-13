@@ -29,6 +29,7 @@ class TrainingConfig:
     max_grad_norm: float | None = 1.0
     num_workers: int = 4
     lr: float = 1e-3
+    flash_attention: str = "flash_attention_1"
     warmup_ratio: float = 0.01
     weight_decay: float = 0.1
     adam_beta1: float = 0.9
