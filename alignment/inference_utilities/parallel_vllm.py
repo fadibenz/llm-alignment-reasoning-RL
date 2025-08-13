@@ -25,6 +25,7 @@ def init_vllm(model_id: str,
 
 def load_policy_into_vllm_instance(policy: PreTrainedModel, llm: LLM):
     """ Copied from https://github.com/huggingface/trl/blob/22759c820867c8659d00082ba8cf004e963873c1/trl/trainer/grpo_trainer.py#L670. """
-    state_dict = policy.state_dict()
+    model = policy.module if isinstance(policy, torch.nn.parallel.DistributedDataParallel) else policy
+    state_dict = model.state_dict()
     llm_model = llm.llm_engine.model_executor.driver_worker.model_runner.model
     llm_model.load_weights(state_dict.items())
