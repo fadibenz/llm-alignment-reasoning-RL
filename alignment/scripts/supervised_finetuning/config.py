@@ -29,14 +29,14 @@ class TrainingConfig:
     max_grad_norm: float | None = 1.0
     num_workers: int = 4
     lr: float = 1e-3
-    flash_attention: str = "flash_attention_1"
+    flash_attention: str = "flash_attention_2"
     warmup_ratio: float = 0.01
     weight_decay: float = 0.1
     adam_beta1: float = 0.9
     adam_beta2: float = 0.98
     adam_eps: float = 1e-9
-    wandb_project: str | None = "llm-sft-MATH"
-    wandb_entity: str | None = "benzaimafadi-esi"
+    wandb_project: str | None = None
+    wandb_entity: str | None = None
     log_interval: int = 20
     save_checkpoints: bool = False
 

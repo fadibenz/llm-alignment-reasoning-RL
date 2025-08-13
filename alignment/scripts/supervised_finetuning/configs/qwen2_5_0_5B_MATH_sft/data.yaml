@@ -1,5 +1,4 @@
 # @package _global_
-
 paths:
   train_path: data/MATH/sft.jsonl
   valid_path: data/MATH/validation.jsonl
@@ -7,4 +6,5 @@ paths:
   model_output: results/sft/qwen2_5_0_5B_MATH_sft
 
 training:
-  flash_attention: null
+  wandb_entity: benzaimafadi-esi
+  wandb_project: llm-sft-MATH
