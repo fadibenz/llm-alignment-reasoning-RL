@@ -123,12 +123,6 @@ def main(cfg: Config) -> None:
             eval_output_dir = cfg.paths.model_output / "evaluation_results"
             eval_output_dir.mkdir(parents=True, exist_ok=True)
 
-            # Save model config
-            cfg.paths.model_output.mkdir(parents=True, exist_ok=True)
-            experiment_output_path = cfg.paths.model_output / "experiment_config.json"
-            logger.info(f"Saving model config to {experiment_output_path}")
-            with open(experiment_output_path, "w") as f:
-                json.dump(OmegaConf.to_container(cfg, resolve=True), f, indent=4)
         else:
             prompts, ground_truths, reward_fn, eval_output_dir = None, None, None, None
 
