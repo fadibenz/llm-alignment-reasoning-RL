@@ -1,3 +1,5 @@
+# @package _global_
+
 paths:
   train_path: data/MATH/sft.jsonl
   valid_path: data/MATH/validation.jsonl
