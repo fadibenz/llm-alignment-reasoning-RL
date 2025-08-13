@@ -96,7 +96,8 @@ def main(cfg: Config) -> None:
 
         if is_master_process:
             # Load validation data
-            prompts, ground_truths = load_validation_data(cfg.paths.valid_path, cfg.paths.prompt_path)
+            prompt_template = Path(cfg.paths.prompt_path).read_text(encoding="utf-8")
+            prompts, ground_truths = load_validation_data(cfg.paths.valid_path, prompt_template)
             reward_fn = make_reward_fn(ground_truths)
 
             # Setup wandb
