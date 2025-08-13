@@ -6,8 +6,8 @@ import torch.distributed as dist
 
 def _setup_process_group():
 
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12390"
+    os.environ["MASTER_ADDR"] = "127.0.0.1"
+    os.environ["MASTER_PORT"] = "29500"
 
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
