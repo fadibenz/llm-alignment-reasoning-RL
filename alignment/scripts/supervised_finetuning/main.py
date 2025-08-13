@@ -47,6 +47,11 @@ def main(cfg: Config) -> None:
 
     # Setting up distributed training
     device, rank, world_size, local_rank = _setup_process_group()
+
+    if world_size < 2:
+        raise RuntimeError("world_size must be >=2 (one for training, one reserved GPU for vLLM). "
+                           "Or remove the reserved GPU logic and run with world_size==num_training_gpus.")
+
     seed = cfg.training.seed + rank
     set_seed_everything(seed)
 
@@ -79,7 +84,7 @@ def main(cfg: Config) -> None:
                 shuffle=True,
                 seed=seed
             )
-            shuffle=False
+            shuffle = False
         else:
             sampler = None
             shuffle = True
@@ -90,7 +95,7 @@ def main(cfg: Config) -> None:
             shuffle=shuffle,
             num_workers=cfg.training.num_workers,
             pin_memory=True,
-            persistent_workers=True,
+            persistent_workers=(cfg.training.num_workers > 0),
             sampler = sampler
         )
 
@@ -116,14 +121,14 @@ def main(cfg: Config) -> None:
 
             # Create eval directory
             eval_output_dir = cfg.paths.model_output / "evaluation_results"
-            eval_output_dir.mkdir(parents=True, exists_ok=True)
+            eval_output_dir.mkdir(parents=True, exist_ok=True)
 
             # Save model config
-            cfg.paths.model_output.mkdir(parents=True, exists_ok=True)
+            cfg.paths.model_output.mkdir(parents=True, exist_ok=True)
             experiment_output_path = cfg.paths.model_output / "experiment_config.json"
             logger.info(f"Saving model config to {experiment_output_path}")
             with open(experiment_output_path, "w") as f:
-                json.dump(cfg, f, indent=4)
+                json.dump(OmegaConf.to_container(cfg, resolve=True), f, indent=4)
         else:
             prompts, ground_truths, reward_fn, eval_output_dir = None, None, None, None
 
@@ -135,8 +140,13 @@ def main(cfg: Config) -> None:
             torch_dtype=torch_dtype,
             attn_implementation=cfg.training.flash_attention,
         )
+
         if is_master_process:
             pprint(model)
+
+        # Move Policy to correct GPU
+        model = model.to(device)
+        model = torch.compile(model)
 
         if is_ddp:
             model = DDP(
@@ -145,9 +155,6 @@ def main(cfg: Config) -> None:
                 process_group=training_group
             )
 
-        # Move Policy to correct GPU
-        model = model.to(device)
-        model = torch.compile(model)
 
         # Initialize vllm on DIFFERENT DEVICE
         # This is a neat trick used in TRL (HF) to use GPU 0 as a
@@ -162,7 +169,7 @@ def main(cfg: Config) -> None:
                 temperature=cfg.inference.temperature,
                 top_p=cfg.inference.top_p,
                 logprobs= cfg.inference.logprobs,
-                stop=list(cfg.inference.stop_sequences),
+                stop=["</answer>"],
                 include_stop_str_in_output=cfg.inference.include_stop_str_in_output,
                 seed = seed
             )
@@ -190,7 +197,8 @@ def main(cfg: Config) -> None:
 
         train_step_counter = 0
         eval_step_counter = 0
-        global_step = 0
+        optimizer_step = 0 # "effective step"
+        train_steps = cfg.training.num_epochs * (len(train_loader) // cfg.training.gradient_accumulation_steps)
 
         for epoch in range(cfg.training.num_epochs):
                 pbar = tqdm(
@@ -200,25 +208,18 @@ def main(cfg: Config) -> None:
                     disable= not is_master_process
                 )
 
-                for idx, (batch_ids, batch_labels, batch_masks) in enumerate(pbar):
+                if is_ddp:
+                    sampler.set_epoch(epoch)
 
+                for idx, (batch_ids, batch_labels, batch_masks) in enumerate(pbar):
+                    model.train()
                     if is_ddp:
                         model.require_backward_grad_sync = ((idx + 1) % cfg.training.gradient_accumulation_steps == 0)
 
-                    lr = get_cosine_lr(
-                        global_step,
-                        max_learning_rate=cfg.training.lr,
-                        min_learning_rate=cfg.training.lr * 0.1,
-                        warmup_iters=int(cfg.training.train_steps * cfg.training.warmup_ratio),
-                        cosine_cycle_iters=cfg.training.train_steps,
-                    )
-
-                    for param_group in optimizer.param_groups:
-                        param_group["lr"] = lr
-
                     batch_ids = batch_ids.to(device, non_blocking=True)
                     batch_labels = batch_labels.to(device, non_blocking=True)
-                    return_token_entropy = (idx % cfg.training.log_interval == 0)
+                    batch_masks = batch_masks.to(device, non_blocking=True)
+                    return_token_entropy = ((optimizer_step + 1) % cfg.training.log_interval == 0)
 
                     with amp_ctx:
                         response_probs = get_response_log_probs(
@@ -238,6 +239,18 @@ def main(cfg: Config) -> None:
 
                     if (idx + 1) % cfg.training.gradient_accumulation_steps == 0:
 
+                        lr = get_cosine_lr(
+                            optimizer_step,
+                            max_learning_rate=cfg.training.lr,
+                            min_learning_rate=cfg.training.lr * 0.1,
+                            warmup_iters=int(train_steps * cfg.training.warmup_ratio),
+                            cosine_cycle_iters=train_steps,
+                        )
+
+                        for param_group in optimizer.param_groups:
+                            param_group["lr"] = lr
+
+                        scaler.unscale_(optimizer)
                         if cfg.training.max_grad_norm is not None:
                             torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.training.max_grad_norm)
 
@@ -245,12 +258,13 @@ def main(cfg: Config) -> None:
                         scaler.update()
                         optimizer.zero_grad(set_to_none=True)
                         loss_float = loss.item() * cfg.training.gradient_accumulation_steps
-                        mean_per_token_entropy = torch.mean(response_probs["token_entropy"]).item()
+                        mean_per_token_entropy = torch.mean(response_probs["token_entropy"]).item() if return_token_entropy else float('nan')
 
                         if is_master_process:
-                            pbar.set_description(f"Loss: {loss_float}:.4f, Mean Per-Token Entropy: {mean_per_token_entropy}:.4f")
+                            pbar.set_description(f"Loss: {loss_float:.4f}, Mean Per-Token Entropy: {mean_per_token_entropy:.4f}")
 
-                            if cfg.training.wandb_project and idx % cfg.training.log_interval == 0:
+                            if cfg.training.wandb_project and ((optimizer_step + 1) % cfg.training.log_interval == 0):
+                                mean_per_token_entropy = torch.mean(response_probs["token_entropy"]).item()
                                 wandb.log({
                                     "train/loss": loss_float,
                                     "train/mean_per_token_entropy": mean_per_token_entropy,
@@ -260,7 +274,7 @@ def main(cfg: Config) -> None:
 
                                 train_step_counter += 1
 
-                            if idx != 0 and idx % cfg.training.eval_interval == 0:
+                            if (optimizer_step + 1) % cfg.training.eval_interval == 0 :
                                 load_policy_into_vllm_instance(model, vllm_model)
                                 metrics = evaluate_and_metrics(vllm_model, reward_fn, prompts, eval_sampling_params, cfg.inference.sample_size)
 
@@ -286,11 +300,12 @@ def main(cfg: Config) -> None:
                                 )
 
                                 if cfg.training.save_checkpoints:
-                                    model_weights_output_path = cfg.paths.model_output / f"step_{idx:010d}" / "model.pt"
+                                    model_weights_output_path = cfg.paths.model_output / f"step_{optimizer_step:010d}" / "model.pt"
                                     model_weights_output_path.parent.mkdir(parents=True, exist_ok=True)
-                                    torch.save(model.state_dict(), model_weights_output_path)
+                                    to_save = model.module if isinstance(model, DDP) else model
+                                    torch.save(to_save.state_dict(), model_weights_output_path)
 
-                    global_step += 1
+                        optimizer_step += 1
 
     _cleanup_process_group()
 
