@@ -136,9 +136,16 @@ def main(cfg: Config) -> None:
         if is_master_process:
             pprint(model)
 
+        if cfg.training.use_gradient_checkpointing:
+            model.gradient_checkpointing_enable()
+
         # Move Policy to correct GPU
         model = model.to(device)
-        model = torch.compile(model)
+
+        if cfg.training.use_compile:
+            model = torch.compile(model)
+
+
 
         if is_ddp:
             model = DDP(

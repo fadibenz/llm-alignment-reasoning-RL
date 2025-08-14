@@ -39,6 +39,9 @@ class TrainingConfig:
     adam_beta1: float = 0.9
     adam_beta2: float = 0.95
 
+    use_compile: bool = False
+    use_gradient_checkpointing: bool = False
+
     wandb_project: str | None = None
     wandb_entity: str | None = None
     save_checkpoints: bool = False
