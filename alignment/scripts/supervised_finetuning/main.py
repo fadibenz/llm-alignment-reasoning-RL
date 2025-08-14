@@ -215,7 +215,6 @@ def main(cfg: Config) -> None:
                     batch_ids = batch_ids.to(device, non_blocking=True)
                     batch_labels = batch_labels.to(device, non_blocking=True)
                     batch_masks = batch_masks.to(device, non_blocking=True)
-                    return_token_entropy = ((optimizer_step + 1) % cfg.training.log_interval == 0)
 
                     with amp_ctx:
                         response_probs = get_response_log_probs(
@@ -254,16 +253,13 @@ def main(cfg: Config) -> None:
                         scaler.update()
                         optimizer.zero_grad(set_to_none=True)
                         loss_float = loss.item() * cfg.training.gradient_accumulation_steps
-                        mean_per_token_entropy = torch.mean(response_probs["token_entropy"]).item() if return_token_entropy else float('nan')
 
                         if is_master_process:
-                            pbar.set_description(f"Loss: {loss_float:.4f}, Mean Per-Token Entropy: {mean_per_token_entropy:.4f}")
+                            pbar.set_description(f"Loss: {loss_float:.4f}")
 
                             if cfg.training.wandb_project and ((optimizer_step + 1) % cfg.training.log_interval == 0):
-                                mean_per_token_entropy = torch.mean(response_probs["token_entropy"]).item()
                                 wandb.log({
                                     "train/loss": loss_float,
-                                    "train/mean_per_token_entropy": mean_per_token_entropy,
                                     "train/lr": lr,
                                     "train_step": train_step_counter
                                 })
