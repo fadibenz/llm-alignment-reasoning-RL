@@ -17,7 +17,7 @@ from vllm import SamplingParams
 
 from alignment.inference_utilities.evaluate_and_metrics import evaluate_and_metrics
 from alignment.inference_utilities.parallel_vllm import init_vllm, load_policy_into_vllm_instance
-from alignment.inference_utilities.reward_function import make_reward_fn
+from alignment.utils.drgrpo_grader import r1_zero_reward_fn
 from alignment.sft_helper_methods.log_generations import log_generations
 
 from alignment.utils.dist_utils import _setup_process_group, _cleanup_process_group
@@ -88,7 +88,6 @@ def main(cfg: Config) -> None:
         # Load validation data
         prompt_template = Path(cfg.paths.prompt_path).read_text(encoding="utf-8")
         prompts, ground_truths = load_validation_data(cfg.paths.valid_path, prompt_template)
-        reward_fn = make_reward_fn(ground_truths)
 
         # Setup wandb
         if cfg.training.wandb_project and cfg.training.wandb_entity:
@@ -109,7 +108,7 @@ def main(cfg: Config) -> None:
         eval_output_dir.mkdir(parents=True, exist_ok=True)
 
     else:
-        prompts, ground_truths, reward_fn, eval_output_dir = None, None, None, None
+        prompts, ground_truths,  eval_output_dir = None,  None, None
 
     # Start training
     if is_training_process:
@@ -268,7 +267,7 @@ def main(cfg: Config) -> None:
 
                             if (optimizer_step + 1) % cfg.training.eval_interval == 0 :
                                 load_policy_into_vllm_instance(model, vllm_model)
-                                metrics = evaluate_and_metrics(vllm_model, reward_fn, prompts, ground_truths, vllm_device, eval_sampling_params, cfg.inference.sample_size)
+                                metrics = evaluate_and_metrics(vllm_model, r1_zero_reward_fn, prompts, ground_truths, vllm_device, eval_sampling_params, cfg.inference.sample_size)
 
                                 wandb.log({
                                     "eval/answer_reward_mean": metrics["answer_reward_mean"],
