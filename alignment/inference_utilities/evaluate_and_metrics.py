@@ -10,11 +10,13 @@ def evaluate_and_metrics(
         reward_fn: Callable[[str, str], Dict[str, float]],
         prompts: List[str],
         ground_truths: List[str],
+        vllm_device: str,
         sampling_params: SamplingParams,
         sample_size: int = 5
 ) -> Dict[str, any]:
 
-    outputs = vllm_model.generate(prompts, sampling_params=sampling_params)
+    with torch.cuda.device(vllm_device):
+        outputs = vllm_model.generate(prompts, sampling_params=sampling_params)
 
     answer_scores, format_scores, lengths, entropies = [], [], [], []
     lengths_correct, lengths_incorrect = [], []
