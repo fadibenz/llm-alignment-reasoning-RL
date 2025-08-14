@@ -17,6 +17,7 @@ def get_response_log_probs(model: PreTrainedModel,
     response_probs["log_probs"] = log_soft.gather(dim=-1, index=labels.unsqueeze(-1)).squeeze(-1)
 
     if return_token_entropy:
-        response_probs["token_entropy"] = compute_entropy(logits)
+        with torch.no_grad():
+            response_probs["token_entropy"] = compute_entropy(logits)
 
     return response_probs
