@@ -221,7 +221,7 @@ def main(cfg: Config) -> None:
                             model,
                             batch_ids,
                             batch_labels,
-                            return_token_entropy
+                            False
                         )
 
                         loss, metadata = sft_microbatch_train_step(
