@@ -3,7 +3,7 @@ import statistics
 import random
 from typing import Callable, Dict, List
 from vllm import SamplingParams
-
+import torch
 
 def evaluate_and_metrics(
         vllm_model,
