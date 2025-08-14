@@ -18,7 +18,7 @@ def evaluate_vllm(
     total_correct_formatting = 0
 
     with open(results_path, "w", encoding="utf-8") as results_file:
-        outputs = vllm_model.generate(prompts, sampling_params)
+        outputs = vllm_model.generate(prompts, sampling_params=sampling_params)
 
         for idx, output in enumerate(outputs):
             generated_text = output.outputs[0].text if output.outputs else ""
