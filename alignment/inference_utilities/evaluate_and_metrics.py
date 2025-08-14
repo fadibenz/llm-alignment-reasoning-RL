@@ -2,6 +2,7 @@ import math
 import statistics
 import random
 from typing import Callable, Dict, List
+from vllm import SamplingParams
 
 
 def evaluate_and_metrics(
@@ -9,7 +10,7 @@ def evaluate_and_metrics(
         reward_fn: Callable[[str, str], Dict[str, float]],
         prompts: List[str],
         ground_truths: List[str],
-        sampling_params,
+        sampling_params: SamplingParams,
         sample_size: int = 5
 ) -> Dict[str, any]:
 

@@ -71,17 +71,17 @@ def main(cfg: Config) -> None:
         vllm_local_rank = vllm_rank % world_size
         vllm_device = f"cuda:{vllm_local_rank}"
         vllm_model = init_vllm(cfg.model.model_name, vllm_device, torch_dtype)
-
-        eval_sampling_params = SamplingParams(
-            temperature=cfg.inference.temperature,
-            top_p=cfg.inference.top_p,
-            logprobs=cfg.inference.logprobs,
-            stop=["</answer>"],
-            include_stop_str_in_output=cfg.inference.include_stop_str_in_output,
-            seed=seed
-        )
     else:
-        vllm_model, eval_sampling_params = None, None
+        vllm_model = None
+
+    eval_sampling_params = SamplingParams(
+        temperature=cfg.inference.temperature,
+        top_p=cfg.inference.top_p,
+        logprobs=cfg.inference.logprobs,
+        stop=["</answer>"],
+        include_stop_str_in_output=cfg.inference.include_stop_str_in_output,
+        seed=seed
+    )
 
 
     if is_master_process:
