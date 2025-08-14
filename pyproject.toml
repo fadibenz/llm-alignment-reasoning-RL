@@ -17,7 +17,7 @@ dependencies = [
     "tqdm>=4.67.1",
     "transformers>=4.50.0",
     "typer>=0.15.4",
-    "vllm==0.10.0",
+    "vllm==0.7.2",
     "wandb>=0.19.8",
     "xopen>=2.0.2",
     "omegaconf>=2.3.0",

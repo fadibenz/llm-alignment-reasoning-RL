@@ -1,5 +1,4 @@
 import logging
-import json
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
@@ -62,7 +61,57 @@ def main(cfg: Config) -> None:
     is_training_process = rank in training_processes_list
     training_group = dist.new_group(ranks=training_processes_list)
 
-    # Load training data
+    # Initialize vllm on DIFFERENT DEVICE
+    # This is a neat trick used in TRL (HF) to use GPU 0 as a
+    # "remote control" for inference on another GPU.
+
+    torch_dtype = getattr(torch, cfg.training.dtype)
+
+    if is_master_process:
+        vllm_local_rank = vllm_rank % world_size
+        vllm_device = f"cuda:{vllm_local_rank}"
+        vllm_model = init_vllm(cfg.model.model_name, vllm_device, torch_dtype)
+
+        eval_sampling_params = SamplingParams(
+            temperature=cfg.inference.temperature,
+            top_p=cfg.inference.top_p,
+            logprobs=cfg.inference.logprobs,
+            stop=["</answer>"],
+            include_stop_str_in_output=cfg.inference.include_stop_str_in_output,
+            seed=seed
+        )
+    else:
+        vllm_model, eval_sampling_params = None, None
+
+
+    if is_master_process:
+        # Load validation data
+        prompt_template = Path(cfg.paths.prompt_path).read_text(encoding="utf-8")
+        prompts, ground_truths = load_validation_data(cfg.paths.valid_path, prompt_template)
+        reward_fn = make_reward_fn(ground_truths)
+
+        # Setup wandb
+        if cfg.training.wandb_project and cfg.training.wandb_entity:
+            wandb.init(
+                entity=cfg.training.wandb_entity,
+                project=cfg.training.wandb_project,
+                config=OmegaConf.to_container(cfg, resolve=True),
+                name=cfg.paths.model_output.name,
+            )
+
+            wandb.define_metric("train_step")
+            wandb.define_metric("eval_step")
+            wandb.define_metric("train/*", step_metric="train_step")
+            wandb.define_metric("eval/*", step_metric="eval_step")
+
+        # Create eval directory
+        eval_output_dir = cfg.paths.model_output / "evaluation_results"
+        eval_output_dir.mkdir(parents=True, exist_ok=True)
+
+    else:
+        prompts, ground_truths, reward_fn, eval_output_dir = None, None, None, None
+
+    # Start training
     if is_training_process:
         prompt_strs, output_strs = load_training_data(cfg.paths.train_path, cfg.training.number_train_samples)
         tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name)
@@ -97,39 +146,10 @@ def main(cfg: Config) -> None:
             sampler = sampler
         )
 
-        if is_master_process:
-            # Load validation data
-            prompt_template = Path(cfg.paths.prompt_path).read_text(encoding="utf-8")
-            prompts, ground_truths = load_validation_data(cfg.paths.valid_path, prompt_template)
-            reward_fn = make_reward_fn(ground_truths)
-
-            # Setup wandb
-            if cfg.training.wandb_project and cfg.training.wandb_entity:
-                wandb.init(
-                    entity=cfg.training.wandb_entity,
-                    project=cfg.training.wandb_project,
-                    config=OmegaConf.to_container(cfg, resolve=True),
-                    name=cfg.paths.model_output.name,
-                )
-
-                wandb.define_metric("train_step")
-                wandb.define_metric("eval_step")
-                wandb.define_metric("train/*", step_metric="train_step")
-                wandb.define_metric("eval/*", step_metric="eval_step")
-
-            # Create eval directory
-            eval_output_dir = cfg.paths.model_output / "evaluation_results"
-            eval_output_dir.mkdir(parents=True, exist_ok=True)
-
-        else:
-            prompts, ground_truths, reward_fn, eval_output_dir = None, None, None, None
-
-
-        # Loading Model
-        torch_dtype = getattr(torch, cfg.training.dtype)
         model = AutoModelForCausalLM.from_pretrained(
             pretrained_model_name_or_path=cfg.model.model_name,
-            torch_dtype=torch_dtype,
+            # load model in FP32 for scaler
+            torch_dtype=torch.float32,
             attn_implementation="sdpa",
         )
 
@@ -145,34 +165,12 @@ def main(cfg: Config) -> None:
         if cfg.training.use_compile:
             model = torch.compile(model)
 
-
-
         if is_ddp:
             model = DDP(
                 model,
                 device_ids=[local_rank],
                 process_group=training_group
             )
-
-        # Initialize vllm on DIFFERENT DEVICE
-        # This is a neat trick used in TRL (HF) to use GPU 0 as a
-        # "remote control" for inference on another GPU.
-
-        if is_master_process:
-            vllm_local_rank = vllm_rank % world_size
-            vllm_device = f"cuda:{vllm_local_rank}"
-            vllm_model = init_vllm(cfg.model.model_name, vllm_device, torch_dtype)
-
-            eval_sampling_params = SamplingParams(
-                temperature=cfg.inference.temperature,
-                top_p=cfg.inference.top_p,
-                logprobs= cfg.inference.logprobs,
-                stop=["</answer>"],
-                include_stop_str_in_output=cfg.inference.include_stop_str_in_output,
-                seed = seed
-            )
-        else:
-            vllm_model, eval_sampling_params = None, None
 
         # Setup Optimizer
         param_dict = {pn: p for pn, p in model.named_parameters() if p.requires_grad}
