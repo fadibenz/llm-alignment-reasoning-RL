@@ -70,7 +70,7 @@ def calculate_entropy(output) -> float:
     for token_logprobs in output.logprobs:
         if not token_logprobs:
             continue
-        logprobs = list(token_logprobs.values())
+        logprobs = [lp.logprob for lp in token_logprobs.values()]
         probs = [math.exp(lp) for lp in logprobs]
         entropy = -sum(p * math.log(p) for p in probs if p > 0)
         entropies.append(entropy)
