@@ -58,6 +58,7 @@ class InferenceConfig:
     stop_sequences: str = "</answer>"
     include_stop_str_in_output: bool = True
     sample_size: int = 5
+    gpu_utilization: float = 0.6
 
 @dataclass
 class Config:

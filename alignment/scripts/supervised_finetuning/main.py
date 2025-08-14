@@ -70,7 +70,7 @@ def main(cfg: Config) -> None:
     if is_master_process:
         vllm_local_rank = vllm_rank % world_size
         vllm_device = f"cuda:{vllm_local_rank}"
-        vllm_model = init_vllm(cfg.model.model_name, vllm_device, torch_dtype)
+        vllm_model = init_vllm(cfg.model.model_name, vllm_device, torch_dtype, cfg.inference.gpu_utilization)
     else:
         vllm_model = None
 
