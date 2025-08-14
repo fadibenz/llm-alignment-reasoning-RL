@@ -14,7 +14,7 @@ def evaluate_and_metrics(
         sample_size: int = 5
 ) -> Dict[str, any]:
 
-    outputs = vllm_model.generate(prompts, sampling_params)
+    outputs = vllm_model.generate(prompts, sampling_params=sampling_params)
 
     answer_scores, format_scores, lengths, entropies = [], [], [], []
     lengths_correct, lengths_incorrect = [], []
