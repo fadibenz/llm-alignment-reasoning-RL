@@ -268,7 +268,7 @@ def main(cfg: Config) -> None:
 
                             if (optimizer_step + 1) % cfg.training.eval_interval == 0 :
                                 load_policy_into_vllm_instance(model, vllm_model)
-                                metrics = evaluate_and_metrics(vllm_model, reward_fn, prompts, eval_sampling_params, cfg.inference.sample_size)
+                                metrics = evaluate_and_metrics(vllm_model, reward_fn, prompts, ground_truths, eval_sampling_params, cfg.inference.sample_size)
 
                                 wandb.log({
                                     "eval/answer_reward_mean": metrics["answer_reward_mean"],
