@@ -17,7 +17,7 @@ dependencies = [
     "tqdm>=4.67.1",
     "transformers>=4.50.0",
     "typer>=0.15.4",
-    "vllm==0.7.2",
+    "vllm",
     "wandb>=0.19.8",
     "xopen>=2.0.2",
     "omegaconf>=2.3.0",
@@ -35,6 +35,7 @@ no-build-isolation-package = ["flash-attn"]
 
 [tool.uv.sources]
 alpaca-eval = { git = "https://github.com/nelson-liu/alpaca_eval.git", rev = "forward_kwargs_to_vllm" }
+vllm = { git = "https://github.com/fadibenz/vllm-xlformers-patch.git", rev = "main" }
 
 [tool.pytest.ini_options]
 log_cli = true
