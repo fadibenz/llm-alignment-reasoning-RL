@@ -35,7 +35,7 @@ no-build-isolation-package = ["flash-attn"]
 
 [tool.uv.sources]
 alpaca-eval = { git = "https://github.com/nelson-liu/alpaca_eval.git", rev = "forward_kwargs_to_vllm" }
-vllm = { git = "https://github.com/fadibenz/vllm-xlformers-patch.git", rev = "main" }
+vllm = { git = "https://github.com/fadibenz/vllm-xlformers-patch.git", rev = "xformers-patch-v0.7.2" }
 
 [tool.pytest.ini_options]
 log_cli = true
