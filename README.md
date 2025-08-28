@@ -78,7 +78,7 @@ The following are the major architecture and engineering decisions implemented:
 
 When using vLLM as a separate, fast-sampling evaluator (on a different GPU than the policy being trained).
 I apply a small set of runtime patches and a programmatic weight-injection step so the vLLM process uses the latest policy checkpoint before each rollout phase. 
-The repo includes an **installable vLLM patch package** that addresses vLLM/xformers integration issues [read more](https://github.com/fadibenz/vllm-xlformers-patch); 
+The repo includes an **installable vLLM patch package** that addresses vLLM/xformers integration issues [read more](https://github.com/fadibenz/vllm-xlformers-patch/tree/xformers-patch-v0.7.2); 
 however, you still need the runtime monkeypatching below to ensure vLLM can be started inside our Hydra + DDP environment and accept externally-loaded weights.
 
 **Why we patch**
